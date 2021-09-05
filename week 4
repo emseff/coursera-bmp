@@ -1,0 +1,137 @@
+#creates count of matrix of Motifs with pseudocounts
+def CountWithPseudocounts(Motifs):
+    t = len(Motifs)
+    k = len(Motifs[0])
+    count = {} # output variable
+    # your code here
+    for symbol in "ACGT":
+        count[symbol] = []
+        for j in range(k):
+            count[symbol].append(1)
+    for i in range(t):
+        for j in range(k):
+            symbol = Motifs[i][j]
+            count[symbol][j] += 1
+    return count
+
+#return profile matrix of Motifs (with pseudocounts)
+def ProfileWithPseudocounts(Motifs):
+    t = len(Motifs)
+    k = len(Motifs[0])
+    profile = {} # output variable
+    # your code here
+    cont=CountWithPseudocounts(Motifs)
+    for i in range(k):
+        su=0
+        for symbol in "ACGT":
+            su=su+cont[symbol][i]
+        for symbol in "ACGT":
+            cont[symbol][i] = cont[symbol][i]/su
+    profile=cont
+    return profile
+
+#profile matrix with pseudoocounts
+def GreedyMotifSearchWithPseudocounts(Dna,k,t):
+    BestMotifs = []
+    for i in range(0, t):
+        BestMotifs.append(Dna[i][0:k])
+    n = len(Dna[0])
+    for m in range(n-k+1):
+        Motifs = []
+        Motifs.append(Dna[0][m:m+k])
+        for j in range(1, t):
+            P = ProfileWithPseudocounts(Motifs[0:j])
+            Motifs.append(ProfileMostProbablePattern(Dna[j], k, P))
+        if Score(Motifs) < Score(BestMotifs):
+            BestMotifs = Motifs
+    return BestMotifs
+
+#returns most probable k-mers in each string
+def Motifs(Profile, Dna):
+    motifs = []
+    t = len(Dna)
+    k = 4
+    for i in range(t):
+        motif = ProfileMostProbablePattern(Dna[i], k, Profile)
+        motifs.append(motif)
+    return motifs
+
+#chosees random k-mer from each different string, returns list of strings
+import random
+
+def RandomMotifs(Dna, k, t):
+
+    t = len(Dna)
+    l = len(Dna[0])
+    RandomMotif =[]
+    for i in range(t):
+        r = random.randint(0,l-k)
+        RandomMotif.append(Dna[i][r:r+k])
+    return RandomMotif
+
+#motif search with peudocounts
+def RandomizedMotifSearch(Dna, k, t):
+
+    M = RandomMotifs(Dna, k, t)
+    BestMotifs = M
+
+    while True:
+        Profile = ProfileWithPseudocounts(M)
+        M = Motifs(Profile, Dna)
+        if Score(M) < Score(BestMotifs):
+            BestMotifs = M
+        else:
+            return BestMotifs
+
+        
+#normlize probablilities
+def Normalize(Probabilities):
+    sumOfProbabilities = 0
+    newlist = {}
+    for i in Probabilities:
+        sumOfProbabilities += Probabilities.get(i)
+    for i in Probabilities:
+        newlist[i] = 0
+        for j in Probabilities:
+            if i == j:
+                newlist[i] += Probabilities[j]/sumOfProbabilities
+    return newlist
+
+#get random k-mer key from probabilites
+import random
+def WeightedDie(Probabilities):
+    count = 0
+    p = random.uniform(0,1)
+    for keys,values in Probabilities.items():
+        count = count+values
+        if p < count:
+        
+            return keys
+        
+
+import random
+def WeightedDie(Probabilities):
+    count = 0
+    p = random.uniform(0,1)
+    for keys,values in Probabilities.items():
+        count = count+values
+        if p < count:
+        
+            return keys
+        
+def GibbsSampler(Dna, k, t, N):
+    BestMotifs = [] 
+    Motifs = RandomMotifs(Dna, k, t)
+    BestMotifs = Motifs
+    for j in range(1,N):
+        i = random.randint(0,t-1)
+        ReducedMotifs = []
+        for j in range(0,t):
+            if j != i:
+                ReducedMotifs.append(Motifs[j])
+        Profile = ProfileWithPseudocounts(ReducedMotifs)
+        Motif_i = ProfileGeneratedString(Dna[i], Profile, k)
+        Motifs[i] = Motif_i
+        if Score(Motifs) < Score(BestMotifs):
+                BestMotifs=Motifs
+    return BestMotifs
